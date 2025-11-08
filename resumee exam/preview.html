@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Resume Preview</title>
+<style>
+  :root{--accent:#4360de;--muted:#6b7280}
+  body{font-family:Inter,Segoe UI,Arial;margin:0;background:#d3d8e1;padding:20px}
+  .topbar{display:flex;justify-content:space-between;align-items:center;max-width:1200px;margin:0 auto 18px}
+  .topbar a{padding:9px 14px;border-radius:8px;text-decoration:none;font-weight:700}
+  .left a{background:white;border:1px solid #e6e9ef;color:#333}
+  .right button{background:var(--accent);color:white;border:0;padding:9px 14px;border-radius:8px;font-weight:700;cursor:pointer}
+  .container{max-width:1200px;margin:0 auto}
+  .resume-wrapper{background:rgb(202, 206, 220);border-radius:12px;overflow:hidden;box-shadow:0 16px 50px rgba(20,20,40,.07)}
+  .resume{display:grid;grid-template-columns:300px 1fr;min-height:900px}
+  .sidebar{background:#2f3742;color:white;padding:36px}
+  .profile{width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;margin:0 auto 18px;border:6px solid #1f2530}
+  .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:800;color:#dbe5ff}
+  .muted{color:#b9c4d3;font-size:13px}
+  .main{padding:36px;background:white;color:#1f2937}
+  .name{font-size:34px;font-weight:800;margin-bottom:6px}
+  .title{color:var(--accent);font-weight:700;margin-bottom:16px}
+  .summary{color:#55606a;margin-bottom:22px}
+  .exp-item{margin-bottom:18px;padding-left:16px;border-left:3px solid #eef2ff}
+  .exp-pos{font-weight:700}
+  .exp-company{color:var(--accent);font-weight:700;font-size:13px}
+  .exp-date{float:right;color:#8b94a1;font-size:13px}
+  .edu-item,.ref-item{margin-bottom:12px}
+  .skills{list-style:none;padding:0;margin:0}
+  .skills li{margin-bottom:8px;color:#cfe0ff}
+  @media(max-width:980px){.resume{grid-template-columns:1fr;padding:20px}.profile{margin-bottom:14px}}
+  @media print{
+    body{padding:0;background:white}
+    .topbar{display:none}
+    .resume{min-height:unset}
+    .resume-wrapper{box-shadow:none;border-radius:0}
+  }
+</style>
+</head>
+<body>
+  <div class="topbar">
+    <div class="left">
+      <a href="resume.html">← Edit resume</a>
+      <a href="index.html" style="margin-left:8px">Home</a>
+    </div>
+    <div class="right">
+      <!-- Download uses html2pdf (one-click). Print uses window.print() -->
+      <button id="btnDownload">📄 Download PDF</button>
+      <button id="btnPrint" style="margin-left:8px;background:#10b981">🖨️ Print</button>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="resume-wrapper" id="resumeRoot">
+      <div class="resume" id="resumeRender">
+        <!-- sidebar & main injected by JS -->
+      </div>
+    </div>
+  </div>
+
+<!-- html2pdf bundle (includes html2canvas + jsPDF) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.3/html2pdf.bundle.min.js"></script>
+
+<script>
+  function getData(){
+    try { return JSON.parse(localStorage.getItem('resumeData')||'{}'); }
+    catch(e){ return {}; }
+  }
+
+  function render(){
+    const d = getData();
+    const renderRoot = document.getElementById('resumeRender');
+    const name = d.name || 'Your Name';
+    const title = d.title || '';
+    const summary = d.summary || '';
+    const phone = d.phone || '';
+    const email = d.email || '';
+    const website = d.website || '';
+    const address = d.address || '';
+    const expertise = d.expertise || [];
+    const experiences = d.experiences || [];
+    const educations = d.educations || [];
+    const languages = d.languages || [];
+    const references = d.references || [];
+
+    const sidebar = document.createElement('aside');
+    sidebar.className = 'sidebar';
+    sidebar.innerHTML = `
+      <div class="profile" id="profileInitial">${getInitials(name)}</div>
+      <div style="text-align:center;margin-bottom:18px">
+        <div style="font-weight:800;font-size:18px">${name}</div>
+        <div class="muted">${title}</div>
+      </div>
+
+      <div style="margin-top:18px">
+        <div class="section-title">Contact</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Phone:</strong><br>${phone || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Email:</strong><br>${email || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Website:</strong><br>${website || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Address:</strong><br>${address || '-'}</div>
+      </div>
+
+      ${educations.length ? `<div style="margin-top:16px"><div class="section-title">Education</div>` +
+        educations.map(e=>`<div class="edu-item"><div style="font-weight:700">${escapeHtml(e.degree||'')}</div><div class="muted">${escapeHtml(e.school||'')}</div><div class="muted">${escapeHtml(e.year||'')}</div></div>`).join('') + `</div>` : ''}
+
+      ${expertise.length ? `<div style="margin-top:16px"><div class="section-title">Skills</div><ul class="skills">`+
+        expertise.map(s=>`<li>• ${escapeHtml(s)}</li>`).join('') + `</ul></div>` : ''}
+
+      ${languages.length ? `<div style="margin-top:16px"><div class="section-title">Languages</div>` +
+        languages.map(l=>`<div class="muted"><strong>${escapeHtml(l.name)}</strong><div style="color:#cfe0ff">${escapeHtml(l.level||'')}</div></div>`).join('') + `</div>` : ''}
+    `;
+
+    const main = document.createElement('main');
+    main.className = 'main';
+    main.innerHTML = `
+      <div class="name">${escapeHtml(name)}</div>
+      <div class="title">${escapeHtml(title)}</div>
+      <div class="summary">${escapeHtml(summary)}</div>
+
+      ${experiences.length ? `<div style="margin-top:8px"><div class="section-title">Experience</div>` +
+        experiences.map(exp=>`<div class="exp-item"><div style="display:flex;justify-content:space-between"><div><div class="exp-pos">${escapeHtml(exp.position||'')}</div><div class="exp-company">${escapeHtml(exp.company||'')}</div></div><div class="exp-date">${escapeHtml(exp.duration||'')}</div></div><div style="margin-top:8px" class="muted">${escapeHtml(exp.description||'')}</div></div>`).join('') + `</div>` : ''}
+
+      ${references.length ? `<div style="margin-top:12px"><div class="section-title">References</div>` +
+        references.map(r=>`<div class="ref-item"><div style="font-weight:700">${escapeHtml(r.name||'')}</div><div class="muted">${escapeHtml(r.position||'')}</div><div class="muted">${escapeHtml(r.contact||'')}</div></div>`).join('') + `</div>` : ''}
+    `;
+
+    renderRoot.innerHTML = '';
+    renderRoot.appendChild(sidebar);
+    renderRoot.appendChild(main);
+  }
+
+  function escapeHtml(text){
+    return String(text || '').replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; });
+  }
+
+  function getInitials(name){
+    if (!name) return 'NA';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+    return (parts[0][0] + (parts[1][0]||'')).toUpperCase();
+  }
+
+  // One-click PDF download using html2pdf.js
+  function downloadPDF(){
+    const element = document.getElementById('resumeRoot');
+
+    // Options: page size A4, portrait, margin in inches (0.3)
+    const opt = {
+      margin:       0.25,              // inches
+      filename:     (getData().name ? getData().name.replace(/\s+/g,'_') : 'resume') + '.pdf',
+      image:        { type: 'jpeg', quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true, logging: false },
+      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+    };
+
+    // If html2pdf not loaded (CDN blocked), fallback to print
+    if (typeof html2pdf === 'undefined') {
+      console.warn('html2pdf not available — falling back to print dialog');
+      window.print();
+      return;
+    }
+
+    // Temporarily tweak style to better fit PDF (optional)
+    const resumeEl = document.getElementById('resumeRoot');
+    // Call html2pdf
+    html2pdf().set(opt).from(resumeEl).save().catch(err => {
+      console.error('html2pdf error', err);
+      // fallback to print
+      window.print();
+    });
+  }
+
+  // Print (browser dialog)
+ function printDirect() {
+  // Save a fresh copy of resume data (optional safety)
+  const data = localStorage.getItem('resumeData');
+  if (data) {
+    localStorage.setItem('resumeData', data); // ensure key exists for print.html
+  }
+
+  // Open print.html in a new tab or window
+  const printWindow = window.open('print.html', '_blank');
+
+  // If pop-up blocked, fallback to normal print
+  if (!printWindow) {
+    alert("Pop-up blocked! Please allow pop-ups or use Download PDF instead.");
+    window.print();
+    return;
+  }
+
+  // Focus the new print tab
+  printWindow.focus();
+}
+
+
+  // Event bindings
+  document.getElementById('btnDownload').addEventListener('click', downloadPDF);
+  document.getElementById('btnPrint').addEventListener('click', printDirect);
+
+  // Initial render
+  render();
+  // re-render if storage updated in other tab
+  window.addEventListener('storage', render);
+</script>
+</body>
+</html>

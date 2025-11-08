@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Resume Builder - Home</title>
+<style>
+  :root{--accent:#667eea;--muted:#6b7280}
+  body{font-family:Inter,system-ui,Segoe UI,Arial;margin:0;background:linear-gradient(135deg,#f8fafc,#eef2ff);min-height:100vh;display:flex;align-items:center;justify-content:center}
+  .card{width:960px;background:white;border-radius:14px;box-shadow:0 12px 40px rgba(20,20,40,.08);padding:40px;display:grid;grid-template-columns:1fr 360px;gap:30px}
+  h1{margin:0 0 8px;font-size:28px}
+  p{color:var(--muted);margin:0 0 18px}
+  .cta{display:flex;flex-direction:column;gap:12px}
+  a.button{display:inline-block;text-decoration:none;padding:12px 18px;border-radius:10px;font-weight:700;text-align:center}
+  .primary{background:var(--accent);color:white}
+  .outline{border:2px solid var(--accent);color:var(--accent);background:white}
+  .right{background:linear-gradient(180deg,#f7f9ff,#fff);padding:20px;border-radius:10px}
+  .example{font-size:13px;color:var(--muted);line-height:1.6}
+  @media(max-width:880px){.card{grid-template-columns:1fr;max-width:92vw}}
+</style>
+</head>
+<body>
+  <div class="card">
+    <div>
+      <h1>Resume Builder</h1>
+      <p>Create a modern resume in minutes — fill the form, preview, then download as PDF or print.</p>
+
+      <div style="display:flex;gap:14px">
+        <a href="resume.html" class="button primary">Start Building</a>
+        <a href="preview.html" class="button outline">Open Preview</a>
+      </div>
+
+      <section style="margin-top:26px">
+        <h3 style="margin:0 0 8px">How it works</h3>
+        <ol style="color:var(--muted);padding-left:18px">
+          <li>Fill the resume fields on the Builder page.</li>
+          <li>Click "Save & Preview" to view the formatted resume.</li>
+          <li>On Preview page use "Download PDF" or "Print".</li>
+        </ol>
+      </section>
+    </div>
+
+    <aside class="right">
+      <h3 style="margin-top:0">Tips</h3>
+      <div class="example">
+        • Use concise bullets for achievements.<br>
+        • Add 3–5 skills in the expertise box (one per line).<br>
+        • Use the "Preview" to check spacing before printing.
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

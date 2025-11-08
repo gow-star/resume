@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Resume Print</title>
+<style>
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:Inter,system-ui,Segoe UI,Roboto,Arial, sans-serif;
+    color:#071024;
+    padding:12mm;
+    background:white;
+  }
+
+  /* container sized for A4 minus margins */
+  .paper{
+    width:100%;
+    max-width:210mm;
+    margin:0 auto;
+    display:flex;
+    gap:18px;
+    align-items:flex-start;
+  }
+
+  /* sidebar */
+  .sidebar{
+    width:260px;
+    background:#142431;
+    color:white;
+    padding:18px;
+    border-radius:6px;
+    flex-shrink:0;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .photo{
+    width:88px;
+    height:88px;
+    border-radius:999px;
+    background:linear-gradient(135deg,#6c7cff,#3dd4ff);
+    display:grid;
+    place-items:center;
+    font-weight:800;
+    font-size:24px;
+    margin-bottom:12px;
+    overflow:hidden;
+  }
+
+  /* ensure background image covers */
+  .photo img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+    display:block;
+    border-radius:999px;
+  }
+
+  .main{
+    flex:1;
+    padding:6px;
+    background:transparent;
+  }
+
+  h1{ margin:0; font-size:20px }
+  h2{ margin:0; font-size:16px }
+  .muted{ color:#666; font-size:13px }
+  .section{ margin-top:12px }
+  .exp-item{ margin-bottom:10px; break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid; }
+  .contact-line{ margin-top:6px; color:#cfd8df; font-size:13px; }
+  .label{ font-weight:700; display:block; margin-bottom:6px; color:#e6f0ff; font-size:13px; }
+
+  /* Ensure printed page uses full width and removes UI artifacts */
+  @page {
+    size: A4 portrait;
+    margin: 18mm;
+  }
+
+  @media print {
+    html,body{
+      height:100%;
+      margin:0;
+      padding:0;
+      background:white !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    /* hide everything else that might be present */
+    .topbar, .topbar * { display:none !important; }
+
+    /* layout adjustments for printing */
+    .paper{ gap:14px; max-width: initial; width:100%; }
+    .sidebar{ border-radius:0 !important; padding:18px; }
+    .main{ padding:6px; }
+
+    /* remove visual-only styles */
+    *{ box-shadow:none !important; text-shadow:none !important; }
+
+    /* prevent items from breaking across pages */
+    .exp-item, .section { break-inside: avoid; -webkit-column-break-inside: avoid; page-break-inside: avoid; }
+
+  }
+
+  /* small-screen fallback (not used for print) */
+  @media (max-width:720px){
+    .paper{ flex-direction:column; padding:8mm; }
+    .sidebar{ width:100%; border-radius:6px 6px 0 0 }
+  }
+</style>
+</head>
+<body>
+  <div id="root" class="paper" aria-live="polite"></div>
+
+<script>
+  // safe HTML escape
+  function escapeHtml(str){
+    if (str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, function(m){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m];
+    });
+  }
+
+  function getData(){
+    try {
+      // NOTE: using key 'resume_data' per your file
+      return JSON.parse(localStorage.getItem('resume_data') || 'null');
+    } catch(e) {
+      console.error('resume_data parse error', e);
+      return null;
+    }
+  }
+
+  (function renderPrintView(){
+    const data = getData();
+    const root = document.getElementById('root');
+    if (!data) {
+      root.innerHTML = '<div style="padding:24px">No resume data found. Open the editor and click "Preview" (or save your resume first).</div>';
+      return;
+    }
+
+    // Build education, skills, experience and reference HTML safely
+    const eduHtml = (data.education || []).map(e => `<div>${escapeHtml(e)}</div>`).join('');
+    const skills = (data.skills || []).map(s => escapeHtml(s)).join(', ');
+    const expHtml = (data.experience || []).map(e => `
+      <div class="exp-item">
+        <div style="font-weight:800">${escapeHtml(e.company)}</div>
+        <div class="muted">${escapeHtml(e.role)} • ${escapeHtml(e.years)}</div>
+        <div style="margin-top:6px">${escapeHtml(e.desc)}</div>
+      </div>
+    `).join('');
+    const refHtml = (data.references || []).map(r => `
+      <div style="margin-bottom:8px">
+        <strong>${escapeHtml(r.name)}</strong>
+        <div class="muted">${escapeHtml(r.role)}</div>
+        <div>${escapeHtml(r.contact)}</div>
+      </div>
+    `).join('');
+
+    // Prepare sidebar photo area. We'll use <img> when photo is provided so we can detect load
+    const hasPhoto = !!data.photo;
+    const initials = escapeHtml((data.name || '').split(' ').map(x=>x[0]||'').slice(0,2).join('').toUpperCase());
+
+    // Build container HTML. Photo placeholder will be replaced if an image is loaded.
+    const html = `
+      <aside class="sidebar" role="complementary">
+        <div id="photoContainer" class="photo" aria-hidden="true">
+          ${hasPhoto ? '' : initials}
+        </div>
+
+        <div style="margin-top:8px">
+          <h2>${escapeHtml(data.name || '')}</h2>
+          <div class="muted">${escapeHtml(data.title || '')}</div>
+        </div>
+
+        <div class="section">
+          <span class="label">Contact</span>
+          <div class="contact-line">${escapeHtml(data.phone || '')} ${data.phone && data.email ? '•' : ''} ${escapeHtml(data.email || '')}</div>
+          <div style="margin-top:8px" class="muted">${escapeHtml(data.address || '')}</div>
+        </div>
+
+        <div class="section">
+          <span class="label">Education</span>
+          ${eduHtml || '<div class="muted">—</div>'}
+        </div>
+
+        <div class="section">
+          <span class="label">Skills</span>
+          <div class="muted">${skills || '—'}</div>
+        </div>
+      </aside>
+
+      <main class="main" role="main">
+        <h1>${escapeHtml(data.name || '')}</h1>
+        <div class="muted">${escapeHtml(data.title || '')}</div>
+        <div style="margin-top:10px">${escapeHtml(data.summary || '')}</div>
+
+        <div class="section">
+          <span class="label">Experience</span>
+          ${expHtml || '<div class="muted">No experience added.</div>'}
+        </div>
+
+        <div class="section">
+          <span class="label">References</span>
+          ${refHtml || '<div class="muted">No references added.</div>'}
+        </div>
+      </main>
+    `;
+
+    root.innerHTML = html;
+
+    // Helper to actually trigger print when page is ready.
+    function triggerPrintSoon() {
+      // Ensure the browser has a moment to layout images/fonts.
+      const PRINT_DELAY_MS = 700; // increased delay for fonts/images
+      setTimeout(function(){
+        try {
+          window.print();
+        } catch(e) {
+          console.error('print failed', e);
+        }
+      }, PRINT_DELAY_MS);
+    }
+
+    // If there is a photo URL, try to load it into an <img> and wait for load/error
+    if (hasPhoto) {
+      const photoVal = String(data.photo).trim();
+      // Create an image so we can wait for onload
+      const img = new Image();
+      // try to enable crossOrigin in case the source permits it (helps some browser layouts)
+      try { img.crossOrigin = 'anonymous'; } catch(e) { /* ignore */ }
+
+      // Prepare the container where the image should go
+      const container = document.getElementById('photoContainer');
+
+      // If photoVal looks like a data URL or same-origin, load normally
+      let loadCalled = false;
+      img.onload = function() {
+        if (loadCalled) return; loadCalled = true;
+        // insert image
+        img.alt = escapeHtml(data.name || 'profile');
+        img.style.borderRadius = '999px';
+        container.innerHTML = '';
+        container.appendChild(img);
+        // small extra delay to let browser compositing finish
+        setTimeout(triggerPrintSoon, 200);
+      };
+      img.onerror = function() {
+        if (loadCalled) return; loadCalled = true;
+        // fallback to initials
+        container.innerHTML = initials;
+        // still allow a slightly longer delay in case other resources need to settle
+        setTimeout(triggerPrintSoon, 300);
+      };
+
+      // Start loading; if it fails to start or is invalid URL, fallback after timeout
+      try {
+        img.src = photoVal;
+        // Fallback safety: if neither onload nor onerror fires within X ms, print anyway
+        setTimeout(function(){
+          if (!loadCalled) {
+            try { container.innerHTML = initials; } catch(e) {}
+            triggerPrintSoon();
+          }
+        }, 2000);
+      } catch(e) {
+        // invalid URL or security error; fallback immediately
+        container.innerHTML = initials;
+        triggerPrintSoon();
+      }
+    } else {
+      // no photo -> just trigger print after a short delay
+      triggerPrintSoon();
+    }
+
+    // When printing ends, attempt to close window if this page was opened programmatically
+    window.onafterprint = function(){
+      try { window.close(); } catch(e) { /* ignore */ }
+    };
+
+  })();
+</script>
+</body>
+</html>

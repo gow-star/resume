@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Resume Builder - Form</title>
+<style>
+  :root{--accent:#667eea;--muted:#6b7280}
+  body{font-family:Inter,Segoe UI,Arial;margin:0;background:#3f73da;padding:28px}
+  .wrap{max-width:1000px;margin:0 auto;background:white;border-radius:12px;padding:26px;box-shadow:0 12px 36px rgba(20,20,40,.06)}
+  h2{margin:0 0 8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  label{display:block;font-weight:700;margin-bottom:6px}
+  input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-family:inherit}
+  textarea{min-height:100px;resize:vertical}
+  .full{grid-column:1/ -1}
+  .row{display:flex;gap:12px}
+  button{background:var(--accent);color:white;padding:12px 18px;border:0;border-radius:10px;font-weight:700;cursor:pointer}
+  .btn-light{background:#eef2ff;color:var(--accent);border:2px solid var(--accent)}
+  .actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px}
+  small{color:var(--muted)}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}.actions{flex-direction:column;align-items:stretch}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Build Your Resume</h2>
+      <div style="color:var(--muted)">Data stays in your browser (localStorage)</div>
+    </div>
+
+    <form id="resumeForm" onsubmit="return false;">
+      <div class="grid">
+        <div>
+          <label for="name">Full Name</label>
+          <input id="name" placeholder="Mariana Anderson">
+        </div>
+        <div>
+          <label for="title">Professional Title</label>
+          <input id="title" placeholder="Marketing Manager">
+        </div>
+
+        <div>
+          <label for="phone">Phone</label>
+          <input id="phone" placeholder="123-456-7890">
+        </div>
+        <div>
+          <label for="email">Email</label>
+          <input id="email" placeholder="hello@example.com">
+        </div>
+
+        <div>
+          <label for="website">Website</label>
+          <input id="website" placeholder="www.example.com">
+        </div>
+        <div>
+          <label for="address">Address</label>
+          <input id="address" placeholder="121 Street, NY">
+        </div>
+
+        <div class="full">
+          <label for="summary">Professional Summary</label>
+          <textarea id="summary" placeholder="Write a brief professional summary..."></textarea>
+        </div>
+
+        <div class="full">
+          <label for="expertise">Expertise / Skills (one per line)</label>
+          <textarea id="expertise" placeholder="Visual Design&#10;Wireframes&#10;Storyboards"></textarea>
+        </div>
+
+        <div class="full">
+          <label>Work Experience</label>
+          <div id="experienceContainer"></div>
+          <div style="margin-top:10px" class="row">
+            <button onclick="addExperience()" type="button">+ Add Experience</button>
+            <button onclick="clearExperience()" type="button" class="btn-light">Clear Experiences</button>
+          </div>
+          <small>Each item: duration, position, company, description.</small>
+        </div>
+
+        <div class="full">
+          <label>Education</label>
+          <div id="educationContainer"></div>
+          <div style="margin-top:10px" class="row">
+            <button onclick="addEducation()" type="button">+ Add Education</button>
+            <button onclick="clearEducation()" type="button" class="btn-light">Clear Education</button>
+          </div>
+        </div>
+
+        <div class="full">
+          <label>Languages</label>
+          <div id="languageContainer"></div>
+          <div style="margin-top:10px" class="row">
+            <button onclick="addLanguage()" type="button">+ Add Language</button>
+            <button onclick="clearLanguages()" type="button" class="btn-light">Clear Languages</button>
+          </div>
+        </div>
+
+        <div class="full">
+          <label>References</label>
+          <div id="referenceContainer"></div>
+          <div style="margin-top:10px" class="row">
+            <button onclick="addReference()" type="button">+ Add Reference</button>
+            <button onclick="clearReferences()" type="button" class="btn-light">Clear References</button>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="actions">
+        <a href="index.html" class="btn-light" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px;padding:10px 14px">← Home</a>
+        <button onclick="saveAndPreview()">Save & Preview →</button>
+      </div>
+    </form>
+  </div>
+
+<script>
+  // Small helpers for dynamic blocks
+  let expId=0, eduId=0, langId=0, refId=0;
+
+  function makeDiv(html){ const d=document.createElement('div'); d.innerHTML=html; return d.firstElementChild; }
+
+  function addExperience(data){
+    expId++;
+    const html = `<div class="item" id="exp-${expId}" style="border:1px dashed #e6e9ef;padding:10px;margin-bottom:10px;border-radius:8px">
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input placeholder="Duration (e.g. 2019 - 2022)" class="exp-duration" style="flex:1">
+        <input placeholder="Position" class="exp-position" style="flex:1">
+      </div>
+      <input placeholder="Company" class="exp-company" style="width:100%;margin-bottom:8px">
+      <textarea placeholder="Description" class="exp-description" style="width:100%"></textarea>
+      <div style="text-align:right;margin-top:8px"><button type="button" onclick="this.closest('.item').remove()">Remove</button></div>
+    </div>`;
+    const node = makeDiv(html);
+    if (data){ node.querySelector('.exp-duration').value = data.duration || ''; node.querySelector('.exp-position').value = data.position || ''; node.querySelector('.exp-company').value = data.company || ''; node.querySelector('.exp-description').value = data.description || ''; }
+    document.getElementById('experienceContainer').appendChild(node);
+  }
+
+  function addEducation(data){
+    eduId++;
+    const html = `<div class="item" id="edu-${eduId}" style="border:1px dashed #e6e9ef;padding:10px;margin-bottom:10px;border-radius:8px">
+      <div style="display:flex;gap:8px">
+        <input placeholder="Year" class="edu-year" style="width:110px">
+        <input placeholder="Degree" class="edu-degree" style="flex:1">
+      </div>
+      <input placeholder="Institution" class="edu-school" style="width:100%;margin-top:8px">
+      <div style="text-align:right;margin-top:8px"><button type="button" onclick="this.closest('.item').remove()">Remove</button></div>
+    </div>`;
+    const node = makeDiv(html);
+    if (data){ node.querySelector('.edu-year').value=data.year||''; node.querySelector('.edu-degree').value=data.degree||''; node.querySelector('.edu-school').value=data.school||''; }
+    document.getElementById('educationContainer').appendChild(node);
+  }
+
+  function addLanguage(data){
+    langId++;
+    const html = `<div class="item" id="lang-${langId}" style="border:1px dashed #e6e9ef;padding:10px;margin-bottom:10px;border-radius:8px">
+      <div style="display:flex;gap:8px">
+        <input placeholder="Language" class="lang-name" style="flex:1">
+        <input placeholder="Level (e.g. Native)" class="lang-level" style="width:140px">
+      </div>
+      <div style="text-align:right;margin-top:8px"><button type="button" onclick="this.closest('.item').remove()">Remove</button></div>
+    </div>`;
+    const node = makeDiv(html);
+    if (data){ node.querySelector('.lang-name').value=data.name||''; node.querySelector('.lang-level').value=data.level||''; }
+    document.getElementById('languageContainer').appendChild(node);
+  }
+
+  function addReference(data){
+    refId++;
+    const html=`<div class="item" id="ref-${refId}" style="border:1px dashed #e6e9ef;padding:10px;margin-bottom:10px;border-radius:8px">
+      <input placeholder="Name" class="ref-name" style="width:100%;margin-bottom:8px">
+      <input placeholder="Position / Company" class="ref-position" style="width:100%;margin-bottom:8px">
+      <input placeholder="Contact" class="ref-contact" style="width:100%">
+      <div style="text-align:right;margin-top:8px"><button type="button" onclick="this.closest('.item').remove()">Remove</button></div>
+    </div>`;
+    const node = makeDiv(html);
+    if (data){ node.querySelector('.ref-name').value=data.name||''; node.querySelector('.ref-position').value=data.position||''; node.querySelector('.ref-contact').value=data.contact||''; }
+    document.getElementById('referenceContainer').appendChild(node);
+  }
+
+  // Clear helpers
+  function clearExperience(){ document.getElementById('experienceContainer').innerHTML=''; }
+  function clearEducation(){ document.getElementById('educationContainer').innerHTML=''; }
+  function clearLanguages(){ document.getElementById('languageContainer').innerHTML=''; }
+  function clearReferences(){ document.getElementById('referenceContainer').innerHTML=''; }
+
+  // Save form into localStorage and open preview
+  function saveAndPreview(){
+    const data = {
+      name: document.getElementById('name').value.trim(),
+      title: document.getElementById('title').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      website: document.getElementById('website').value.trim(),
+      address: document.getElementById('address').value.trim(),
+      summary: document.getElementById('summary').value.trim(),
+      expertise: document.getElementById('expertise').value.trim().split(/\r?\n/).map(s=>s.trim()).filter(Boolean),
+      experiences: [],
+      educations: [],
+      languages: [],
+      references: []
+    };
+
+    document.querySelectorAll('#experienceContainer .item').forEach(it=>{
+      data.experiences.push({
+        duration: it.querySelector('.exp-duration')?.value.trim()||'',
+        position: it.querySelector('.exp-position')?.value.trim()||'',
+        company: it.querySelector('.exp-company')?.value.trim()||'',
+        description: it.querySelector('.exp-description')?.value.trim()||''
+      });
+    });
+    document.querySelectorAll('#educationContainer .item').forEach(it=>{
+      data.educations.push({
+        year: it.querySelector('.edu-year')?.value.trim()||'',
+        degree: it.querySelector('.edu-degree')?.value.trim()||'',
+        school: it.querySelector('.edu-school')?.value.trim()||''
+      });
+    });
+    document.querySelectorAll('#languageContainer .item').forEach(it=>{
+      data.languages.push({
+        name: it.querySelector('.lang-name')?.value.trim()||'',
+        level: it.querySelector('.lang-level')?.value.trim()||''
+      });
+    });
+    document.querySelectorAll('#referenceContainer .item').forEach(it=>{
+      data.references.push({
+        name: it.querySelector('.ref-name')?.value.trim()||'',
+        position: it.querySelector('.ref-position')?.value.trim()||'',
+        contact: it.querySelector('.ref-contact')?.value.trim()||''
+      });
+    });
+
+    // Save to localStorage
+    localStorage.setItem('resumeData', JSON.stringify(data));
+
+    // Open preview page
+    window.location.href = 'preview.html';
+  }
+
+  // On load: populate fields from stored data (if available)
+  (function initFromStorage(){
+    const raw = localStorage.getItem('resumeData');
+    if (!raw) {
+      // add 1 example blocks to guide
+      addExperience();
+      addEducation();
+      addLanguage();
+      addReference();
+      return;
+    }
+    try {
+      const d = JSON.parse(raw);
+      document.getElementById('name').value = d.name || '';
+      document.getElementById('title').value = d.title || '';
+      document.getElementById('phone').value = d.phone || '';
+      document.getElementById('email').value = d.email || '';
+      document.getElementById('website').value = d.website || '';
+      document.getElementById('address').value = d.address || '';
+      document.getElementById('summary').value = d.summary || '';
+      document.getElementById('expertise').value = (d.expertise || []).join('\n');
+
+      (d.experiences || []).forEach(e => addExperience(e));
+      (d.educations || []).forEach(e => addEducation(e));
+      (d.languages || []).forEach(l => addLanguage(l));
+      (d.references || []).forEach(r => addReference(r));
+    } catch(e){ console.warn('resumeData parse error', e); addExperience(); addEducation(); addLanguage(); addReference(); }
+  })();
+</script>
+</body>
+</html>
