@@ -123,21 +123,112 @@
     });
   }
 
-  function getData(){
+  // Read resume data: prefer 'resumeData' (editor/preview), fallback to 'resume_data' (older format)
+  function readStoredResume(){
     try {
-      // NOTE: using key 'resume_data' per your file
-      return JSON.parse(localStorage.getItem('resume_data') || 'null');
-    } catch(e) {
-      console.error('resume_data parse error', e);
-      return null;
+      const raw1 = localStorage.getItem('resumeData');
+      if (raw1) {
+        return JSON.parse(raw1);
+      }
+    } catch(e){ /* ignore parse error */ }
+
+    try {
+      const raw2 = localStorage.getItem('resume_data');
+      if (raw2) {
+        return JSON.parse(raw2);
+      }
+    } catch(e){ /* ignore parse error */ }
+
+    return null;
+  }
+
+  // Normalize data to the shape expected by this print template:
+  // { name, title, summary, phone, email, address, photo,
+  //   education: [strings], skills: [strings], experience: [{company, role, years, desc}], references: [{name, role, contact}] }
+  function normalize(raw){
+    if (!raw) return null;
+    const out = {};
+    out.name = raw.name || raw.fullName || '';
+    out.title = raw.title || raw.professionalTitle || '';
+    out.summary = raw.summary || raw.profile || '';
+    out.phone = raw.phone || '';
+    out.email = raw.email || '';
+    out.address = raw.address || raw.location || '';
+
+    // photo: prefer data url in raw.photo
+    out.photo = raw.photo || raw.image || null;
+
+    // education: if preview/editor uses 'educations' array of objects
+    out.education = [];
+    if (Array.isArray(raw.educations) && raw.educations.length){
+      out.education = raw.educations.map(e => {
+        const degree = (e.degree || '').trim();
+        const school = (e.school || '').trim();
+        const year = (e.year || '').trim();
+        // join nicely
+        return [degree, school, year].filter(Boolean).join(' • ');
+      });
+    } else if (Array.isArray(raw.education)) {
+      // already array of strings
+      out.education = raw.education.slice();
     }
+
+    // skills / expertise
+    out.skills = [];
+    if (Array.isArray(raw.expertise) && raw.expertise.length){
+      out.skills = raw.expertise.slice();
+    } else if (Array.isArray(raw.skills) && raw.skills.length){
+      out.skills = raw.skills.slice();
+    } else if (typeof raw.skills === 'string' && raw.skills.trim()){
+      out.skills = raw.skills.split(/[\r\n,]+/).map(s=>s.trim()).filter(Boolean);
+    }
+
+    // experience mapping
+    out.experience = [];
+    if (Array.isArray(raw.experiences) && raw.experiences.length){
+      out.experience = raw.experiences.map(e => ({
+        company: e.company || '',
+        role: e.position || e.role || '',
+        years: e.duration || e.years || '',
+        desc: e.description || e.desc || ''
+      }));
+    } else if (Array.isArray(raw.experience) && raw.experience.length){
+      // already in expected shape
+      out.experience = raw.experience.map(e => ({
+        company: e.company || '',
+        role: e.role || e.position || '',
+        years: e.years || e.duration || '',
+        desc: e.desc || e.description || ''
+      }));
+    }
+
+    // references mapping
+    out.references = [];
+    if (Array.isArray(raw.references) && raw.references.length){
+      out.references = raw.references.map(r => ({
+        name: r.name || '',
+        role: r.position || r.role || '',
+        contact: r.contact || r.phone || r.email || ''
+      }));
+    } else if (Array.isArray(raw.reference) && raw.reference.length){
+      out.references = raw.reference.map(r => ({
+        name: r.name || '',
+        role: r.position || r.role || '',
+        contact: r.contact || r.phone || r.email || ''
+      }));
+    }
+
+    return out;
   }
 
   (function renderPrintView(){
-    const data = getData();
+    const stored = readStoredResume();
+    const data = normalize(stored);
     const root = document.getElementById('root');
+
     if (!data) {
       root.innerHTML = '<div style="padding:24px">No resume data found. Open the editor and click "Preview" (or save your resume first).</div>';
+      // don't auto-print
       return;
     }
 
@@ -147,7 +238,7 @@
     const expHtml = (data.experience || []).map(e => `
       <div class="exp-item">
         <div style="font-weight:800">${escapeHtml(e.company)}</div>
-        <div class="muted">${escapeHtml(e.role)} • ${escapeHtml(e.years)}</div>
+        <div class="muted">${escapeHtml(e.role)}${e.role && e.years ? ' • ' : ''}${escapeHtml(e.years)}</div>
         <div style="margin-top:6px">${escapeHtml(e.desc)}</div>
       </div>
     `).join('');
@@ -161,7 +252,7 @@
 
     // Prepare sidebar photo area. We'll use <img> when photo is provided so we can detect load
     const hasPhoto = !!data.photo;
-    const initials = escapeHtml((data.name || '').split(' ').map(x=>x[0]||'').slice(0,2).join('').toUpperCase());
+    const initials = escapeHtml((data.name || '').split(' ').map(x=>x[0]||'').slice(0,2).join('').toUpperCase() || 'NA');
 
     // Build container HTML. Photo placeholder will be replaced if an image is loaded.
     const html = `
@@ -227,35 +318,30 @@
     // If there is a photo URL, try to load it into an <img> and wait for load/error
     if (hasPhoto) {
       const photoVal = String(data.photo).trim();
-      // Create an image so we can wait for onload
       const img = new Image();
       // try to enable crossOrigin in case the source permits it (helps some browser layouts)
       try { img.crossOrigin = 'anonymous'; } catch(e) { /* ignore */ }
 
-      // Prepare the container where the image should go
       const container = document.getElementById('photoContainer');
-
-      // If photoVal looks like a data URL or same-origin, load normally
       let loadCalled = false;
+
       img.onload = function() {
         if (loadCalled) return; loadCalled = true;
-        // insert image
         img.alt = escapeHtml(data.name || 'profile');
         img.style.borderRadius = '999px';
+        // clear and append
         container.innerHTML = '';
         container.appendChild(img);
         // small extra delay to let browser compositing finish
         setTimeout(triggerPrintSoon, 200);
       };
+
       img.onerror = function() {
         if (loadCalled) return; loadCalled = true;
-        // fallback to initials
         container.innerHTML = initials;
-        // still allow a slightly longer delay in case other resources need to settle
         setTimeout(triggerPrintSoon, 300);
       };
 
-      // Start loading; if it fails to start or is invalid URL, fallback after timeout
       try {
         img.src = photoVal;
         // Fallback safety: if neither onload nor onerror fires within X ms, print anyway
@@ -266,7 +352,6 @@
           }
         }, 2000);
       } catch(e) {
-        // invalid URL or security error; fallback immediately
         container.innerHTML = initials;
         triggerPrintSoon();
       }
