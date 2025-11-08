@@ -9,7 +9,7 @@
   body{font-family:Inter,Segoe UI,Arial;margin:0;background:#3f73da;padding:28px}
   .wrap{max-width:1000px;margin:0 auto;background:white;border-radius:12px;padding:26px;box-shadow:0 12px 36px rgba(20,20,40,.06)}
   h2{margin:0 0 8px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .grid{display:grid;grid-template-columns:260px 1fr;gap:16px}
   label{display:block;font-weight:700;margin-bottom:6px}
   input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #e6e9ef;font-family:inherit}
   textarea{min-height:100px;resize:vertical}
@@ -20,6 +20,21 @@
   .actions{display:flex;gap:12px;justify-content:flex-end;margin-top:16px}
   small{color:var(--muted)}
   @media(max-width:880px){.grid{grid-template-columns:1fr}.actions{flex-direction:column;align-items:stretch}}
+
+  /* Avatar area */
+  .profile-box{display:flex;flex-direction:column;align-items:center;gap:12px;padding:12px;border-radius:10px;border:1px dashed #e6e9ef}
+  .avatar{
+    width:140px;height:140px;border-radius:999px;overflow:hidden;display:inline-block;
+    background:linear-gradient(180deg,#f6f7fb,#fff);box-shadow:0 6px 18px rgba(20,20,40,.04);
+    display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--muted);font-size:20px;
+    cursor:pointer;border:4px solid #fff;
+  }
+  .avatar img{width:100%;height:100%;object-fit:cover;display:block}
+  .avatar-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;text-align:center}
+  .file-row{display:flex;gap:8px;align-items:center}
+  .remove-photo{background:#fff;border:1px solid #e6e9ef;color:var(--muted);padding:8px 10px;border-radius:8px;cursor:pointer}
+  .hint{font-size:13px;color:var(--muted);text-align:center}
+  input[type=file]{display:none}
 </style>
 </head>
 <body>
@@ -31,43 +46,75 @@
 
     <form id="resumeForm" onsubmit="return false;">
       <div class="grid">
+
+        <!-- Profile column -->
         <div>
-          <label for="name">Full Name</label>
-          <input id="name" placeholder="Mariana Anderson">
-        </div>
-        <div>
-          <label for="title">Professional Title</label>
-          <input id="title" placeholder="Marketing Manager">
+          <label style="margin-bottom:10px">Profile Photo</label>
+          <div class="profile-box">
+            <label id="avatarLabel" class="avatar" title="Click to upload photo" for="photoInput" tabindex="0">
+              <!-- Image or placeholder will go here -->
+              <div class="avatar-placeholder" id="avatarPlaceholder">
+                <div style="font-size:28px">+</div>
+                <div style="font-size:13px;color:var(--muted);margin-top:6px">Add photo</div>
+              </div>
+              <img id="avatarImg" alt="Profile photo" style="display:none">
+            </label>
+
+            <div class="file-row">
+              <input id="photoInput" type="file" accept="image/*" aria-label="Upload profile photo">
+              <button type="button" class="remove-photo" id="removePhotoBtn" title="Remove photo">Remove</button>
+            </div>
+            <div class="hint">Click avatar to choose image. Max recommended size 2MB.</div>
+          </div>
         </div>
 
+        <!-- Form fields -->
         <div>
-          <label for="phone">Phone</label>
-          <input id="phone" placeholder="123-456-7890">
-        </div>
-        <div>
-          <label for="email">Email</label>
-          <input id="email" placeholder="hello@example.com">
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <label for="name">Full Name</label>
+              <input id="name" placeholder="Mariana Anderson">
+            </div>
+            <div style="flex:1">
+              <label for="title">Professional Title</label>
+              <input id="title" placeholder="Marketing Manager">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <label for="phone">Phone</label>
+              <input id="phone" placeholder="123-456-7890">
+            </div>
+            <div style="flex:1">
+              <label for="email">Email</label>
+              <input id="email" placeholder="hello@example.com">
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-bottom:12px">
+            <div style="flex:1">
+              <label for="website">Website</label>
+              <input id="website" placeholder="www.example.com">
+            </div>
+            <div style="flex:1">
+              <label for="address">Address</label>
+              <input id="address" placeholder="121 Street, NY">
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label for="summary">Professional Summary</label>
+            <textarea id="summary" placeholder="Write a brief professional summary..."></textarea>
+          </div>
+
+          <div style="margin-bottom:12px">
+            <label for="expertise">Expertise / Skills (one per line)</label>
+            <textarea id="expertise" placeholder="Visual Design&#10;Wireframes&#10;Storyboards"></textarea>
+          </div>
         </div>
 
-        <div>
-          <label for="website">Website</label>
-          <input id="website" placeholder="www.example.com">
-        </div>
-        <div>
-          <label for="address">Address</label>
-          <input id="address" placeholder="121 Street, NY">
-        </div>
-
-        <div class="full">
-          <label for="summary">Professional Summary</label>
-          <textarea id="summary" placeholder="Write a brief professional summary..."></textarea>
-        </div>
-
-        <div class="full">
-          <label for="expertise">Expertise / Skills (one per line)</label>
-          <textarea id="expertise" placeholder="Visual Design&#10;Wireframes&#10;Storyboards"></textarea>
-        </div>
-
+        <!-- The rest of the fields span full width -->
         <div class="full">
           <label>Work Experience</label>
           <div id="experienceContainer"></div>
@@ -184,7 +231,73 @@
   function clearLanguages(){ document.getElementById('languageContainer').innerHTML=''; }
   function clearReferences(){ document.getElementById('referenceContainer').innerHTML=''; }
 
-  // Save form into localStorage and open preview
+  // ---------- Profile photo logic ----------
+  const photoInput = document.getElementById('photoInput');
+  const avatarImg = document.getElementById('avatarImg');
+  const avatarPlaceholder = document.getElementById('avatarPlaceholder');
+  const removePhotoBtn = document.getElementById('removePhotoBtn');
+  const avatarLabel = document.getElementById('avatarLabel');
+
+  function setAvatarFromDataUrl(dataUrl){
+    if (!dataUrl){
+      avatarImg.style.display = 'none';
+      avatarImg.src = '';
+      avatarPlaceholder.style.display = 'flex';
+      return;
+    }
+    avatarImg.src = dataUrl;
+    avatarImg.onload = () => {
+      avatarImg.style.display = 'block';
+      avatarPlaceholder.style.display = 'none';
+    };
+  }
+
+  // When file selected
+  photoInput.addEventListener('change', async (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    // optional: limit size (warn + ignore too large)
+    const maxMB = 5;
+    if (f.size > maxMB * 1024 * 1024){
+      alert('Image is too large. Please choose an image under ' + maxMB + 'MB.');
+      photoInput.value = '';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const dataUrl = ev.target.result;
+      setAvatarFromDataUrl(dataUrl);
+      // immediately persist photo to stored resumeData (so preview + save keep it)
+      const raw = localStorage.getItem('resumeData');
+      let d = raw ? JSON.parse(raw) : {};
+      d.photo = dataUrl;
+      localStorage.setItem('resumeData', JSON.stringify(d));
+    };
+    reader.readAsDataURL(f);
+  });
+
+  // Remove photo
+  removePhotoBtn.addEventListener('click', () => {
+    photoInput.value = '';
+    setAvatarFromDataUrl('');
+    const raw = localStorage.getItem('resumeData');
+    if (!raw) return;
+    try {
+      const d = JSON.parse(raw);
+      delete d.photo;
+      localStorage.setItem('resumeData', JSON.stringify(d));
+    } catch(e){}
+  });
+
+  // keyboard accessibility: Enter / Space on label opens file dialog
+  avatarLabel.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter' || ev.key === ' ') {
+      ev.preventDefault();
+      photoInput.click();
+    }
+  });
+
+  // ---------- Save form into localStorage and open preview ----------
   function saveAndPreview(){
     const data = {
       name: document.getElementById('name').value.trim(),
@@ -198,8 +311,12 @@
       experiences: [],
       educations: [],
       languages: [],
-      references: []
+      references: [],
+      photo: null
     };
+
+    // include current preview photo if present
+    if (avatarImg.src && avatarImg.style.display !== 'none') data.photo = avatarImg.src;
 
     document.querySelectorAll('#experienceContainer .item').forEach(it=>{
       data.experiences.push({
@@ -246,6 +363,7 @@
       addEducation();
       addLanguage();
       addReference();
+      setAvatarFromDataUrl('');
       return;
     }
     try {
@@ -263,7 +381,11 @@
       (d.educations || []).forEach(e => addEducation(e));
       (d.languages || []).forEach(l => addLanguage(l));
       (d.references || []).forEach(r => addReference(r));
-    } catch(e){ console.warn('resumeData parse error', e); addExperience(); addEducation(); addLanguage(); addReference(); }
+
+      // set avatar if present (d.photo should be a data URL)
+      if (d.photo) setAvatarFromDataUrl(d.photo);
+      else setAvatarFromDataUrl('');
+    } catch(e){ console.warn('resumeData parse error', e); addExperience(); addEducation(); addLanguage(); addReference(); setAvatarFromDataUrl(''); }
   })();
 </script>
 </body>
