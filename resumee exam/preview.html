@@ -15,11 +15,12 @@
   .resume-wrapper{background:rgb(202, 206, 220);border-radius:12px;overflow:hidden;box-shadow:0 16px 50px rgba(20,20,40,.07)}
   .resume{display:grid;grid-template-columns:300px 1fr;min-height:900px}
   .sidebar{background:#2f3742;color:white;padding:36px}
-  .profile{width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;margin:0 auto 18px;border:6px solid #1f2530}
+  .profile{width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:800;margin:0 auto 18px;border:6px solid #1f2530;overflow:hidden}
+  .profile img{width:100%;height:100%;object-fit:cover;display:block}
   .section-title{font-size:13px;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;font-weight:800;color:#dbe5ff}
   .muted{color:#b9c4d3;font-size:13px}
   .main{padding:36px;background:white;color:#1f2937}
-  .name{font-size:34px;font-weight:800;margin-bottom:6px}
+  .name{font-size:34px;font-weight:800;margin-bottom:6px}                   
   .title{color:var(--accent);font-weight:700;margin-bottom:16px}
   .summary{color:#55606a;margin-bottom:22px}
   .exp-item{margin-bottom:18px;padding-left:16px;border-left:3px solid #eef2ff}
@@ -84,21 +85,26 @@
     const languages = d.languages || [];
     const references = d.references || [];
 
+    // build profile html: if photo (data URL) exists show image, otherwise initials
+    const profileHtml = (d.photo && typeof d.photo === 'string')
+      ? `<div class="profile"><img src="${d.photo}" alt="Profile photo"></div>`
+      : `<div class="profile" id="profileInitial">${getInitials(name)}</div>`;
+
     const sidebar = document.createElement('aside');
     sidebar.className = 'sidebar';
     sidebar.innerHTML = `
-      <div class="profile" id="profileInitial">${getInitials(name)}</div>
+      ${profileHtml}
       <div style="text-align:center;margin-bottom:18px">
-        <div style="font-weight:800;font-size:18px">${name}</div>
-        <div class="muted">${title}</div>
+        <div style="font-weight:800;font-size:18px">${escapeHtml(name)}</div>
+        <div class="muted">${escapeHtml(title)}</div>
       </div>
 
       <div style="margin-top:18px">
         <div class="section-title">Contact</div>
-        <div class="muted" style="margin-bottom:6px"><strong>Phone:</strong><br>${phone || '-'}</div>
-        <div class="muted" style="margin-bottom:6px"><strong>Email:</strong><br>${email || '-'}</div>
-        <div class="muted" style="margin-bottom:6px"><strong>Website:</strong><br>${website || '-'}</div>
-        <div class="muted" style="margin-bottom:6px"><strong>Address:</strong><br>${address || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Phone:</strong><br>${escapeHtml(phone) || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Email:</strong><br>${escapeHtml(email) || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Website:</strong><br>${escapeHtml(website) || '-'}</div>
+        <div class="muted" style="margin-bottom:6px"><strong>Address:</strong><br>${escapeHtml(address) || '-'}</div>
       </div>
 
       ${educations.length ? `<div style="margin-top:16px"><div class="section-title">Education</div>` +
@@ -145,7 +151,7 @@
   function downloadPDF(){
     const element = document.getElementById('resumeRoot');
 
-    // Options: page size A4, portrait, margin in inches (0.3)
+    // Options: page size A4, portrait, margin in inches (0.25)
     const opt = {
       margin:       0.25,              // inches
       filename:     (getData().name ? getData().name.replace(/\s+/g,'_') : 'resume') + '.pdf',
@@ -154,45 +160,32 @@
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
-    // If html2pdf not loaded (CDN blocked), fallback to print
     if (typeof html2pdf === 'undefined') {
       console.warn('html2pdf not available — falling back to print dialog');
       window.print();
       return;
     }
 
-    // Temporarily tweak style to better fit PDF (optional)
-    const resumeEl = document.getElementById('resumeRoot');
-    // Call html2pdf
-    html2pdf().set(opt).from(resumeEl).save().catch(err => {
+    html2pdf().set(opt).from(element).save().catch(err => {
       console.error('html2pdf error', err);
-      // fallback to print
       window.print();
     });
   }
 
-  // Print (browser dialog)
- function printDirect() {
-  // Save a fresh copy of resume data (optional safety)
-  const data = localStorage.getItem('resumeData');
-  if (data) {
-    localStorage.setItem('resumeData', data); // ensure key exists for print.html
+  // Print (browser dialog) — opens print.html to keep original layout for printing
+  function printDirect() {
+    const data = localStorage.getItem('resumeData');
+    if (data) {
+      localStorage.setItem('resumeData', data);
+    }
+    const printWindow = window.open('print.html', '_blank');
+    if (!printWindow) {
+      alert("Pop-up blocked! Please allow pop-ups or use Download PDF instead.");
+      window.print();
+      return;
+    }
+    printWindow.focus();
   }
-
-  // Open print.html in a new tab or window
-  const printWindow = window.open('print.html', '_blank');
-
-  // If pop-up blocked, fallback to normal print
-  if (!printWindow) {
-    alert("Pop-up blocked! Please allow pop-ups or use Download PDF instead.");
-    window.print();
-    return;
-  }
-
-  // Focus the new print tab
-  printWindow.focus();
-}
-
 
   // Event bindings
   document.getElementById('btnDownload').addEventListener('click', downloadPDF);
